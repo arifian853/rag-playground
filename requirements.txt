@@ -1,0 +1,8 @@
+flask
+flask-cors
+sentence-transformers
+groq
+numpy
+PyPDF2
+requests
+dotenv

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>RAG Playground</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-5xl mx-auto p-6">
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Retrieval-Augmented Generation Playground</h1>
+      <p class="text-slate-600">Upload PDF sebagai knowledge base, lalu ajukan pertanyaan.</p>
+    </header>
+
+    <!-- Card: Upload -->
+    <section class="bg-white rounded-2xl shadow-sm border p-5 mb-6">
+      <h2 class="text-lg font-semibold mb-3">Upload Knowledge (PDF / Text)</h2>
+      <form id="ingestForm" class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium mb-1">PDF files</label>
+          <input name="file" id="pdfFiles" type="file" accept=".pdf" multiple class="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white hover:file:bg-slate-800"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Optional raw text</label>
+          <textarea name="text" id="rawText" rows="4" class="w-full rounded-lg border-slate-200 focus:ring-2 focus:ring-slate-300"></textarea>
+        </div>
+        <div class="flex items-center gap-3">
+          <input name="source" id="source" placeholder="Source label (optional)" class="flex-1 rounded-lg border-slate-200 focus:ring-2 focus:ring-slate-300"/>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" id="replaceCheckbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-300"/>
+            <span class="text-sm font-medium">Replace existing</span>
+          </label>
+          <button id="btnIngest" type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60">Ingest</button>
+        </div>
+      </form>
+      <p id="ingestResult" class="text-sm text-slate-600 mt-3"></p>
+    </section>
+
+    <!-- Card: Chat -->
+    <section class="bg-white rounded-2xl shadow-sm border p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Ask</h2>
+        <div id="knowledgeInfo" class="text-sm text-slate-500"></div>
+      </div>
+      <form id="chatForm" class="space-y-3">
+        <textarea id="query" rows="3" placeholder="Tulis pertanyaan di sini..." class="w-full rounded-lg border-slate-200 focus:ring-2 focus:ring-slate-300"></textarea>
+        <div class="flex items-center gap-3">
+          <button id="btnAsk" type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-60">Ask</button>
+          <span id="latency" class="text-sm text-slate-500"></span>
+        </div>
+      </form>
+
+      <div id="answerCard" class="mt-4 hidden">
+        <h3 class="font-semibold mb-2">Answer</h3>
+        <div id="answer" class="prose prose-slate max-w-none"></div>
+        <h4 class="font-semibold mt-4">Contexts</h4>
+        <div id="contexts" class="mt-2 space-y-2"></div>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-center text-xs text-slate-400">
+      <span>RAG demo • Groq + SentenceTransformers • Flask</span>
+    </footer>
+  </div>
+
+<script>
+const ingestForm = document.getElementById('ingestForm');
+const chatForm   = document.getElementById('chatForm');
+const btnIngest  = document.getElementById('btnIngest');
+const btnAsk     = document.getElementById('btnAsk');
+const ingestRes  = document.getElementById('ingestResult');
+const answerCard = document.getElementById('answerCard');
+const answerDiv  = document.getElementById('answer');
+const contextsDiv= document.getElementById('contexts');
+const latency    = document.getElementById('latency');
+const replaceCheckbox = document.getElementById('replaceCheckbox');
+
+ingestForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btnIngest.disabled = true; ingestRes.textContent = "Uploading & indexing...";
+  const fd = new FormData(ingestForm);
+  
+  // Tambahkan parameter replace
+  if (replaceCheckbox.checked) {
+    fd.append('replace', 'true');
+  }
+  
+  try {
+    const r = await fetch('/ingest', { method:'POST', body: fd });
+    const j = await r.json();
+    if (r.ok) {
+      const replaceMsg = j.replaced ? ' (replaced old data)' : '';
+      ingestRes.textContent = `Ingested ${j.ingested_chunks} chunks (total: ${j.total_store})${replaceMsg} • ${j.latency_ms} ms`;
+    } else {
+      ingestRes.textContent = 'Error: ' + (j.error || 'ingest failed');
+    }
+  } catch (err) {
+    ingestRes.textContent = 'Error: ' + err;
+  } finally {
+    btnIngest.disabled = false;
+  }
+});
+
+chatForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btnAsk.disabled = true; latency.textContent = "Thinking...";
+  answerCard.classList.add('hidden');
+  const q = document.getElementById('query').value || "";
+  try {
+    const r = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ query: q })
+    });
+    const j = await r.json();
+    if (!r.ok) { throw new Error(j.error || 'chat failed'); }
+    
+    // Render markdown ke HTML
+    answerDiv.innerHTML = marked.parse(j.answer || '');
+    
+    contextsDiv.innerHTML = (j.contexts || []).map(c => 
+      `<div class="rounded-lg border p-3 text-sm">
+         <div class="flex justify-between mb-1">
+           <span class="font-medium">${(c.meta && c.meta.source) ? c.meta.source : 'context'}</span>
+           <span class="text-slate-500">score ${c.score}</span>
+         </div>
+         <div class="text-slate-700">${c.text}</div>
+       </div>`
+    ).join('');
+    latency.textContent = `retrieval ${j.metrics.retrieval_ms} ms • generation ${j.metrics.generation_ms} ms`;
+    answerCard.classList.remove('hidden');
+  } catch (err) {
+    latency.textContent = 'Error: ' + err.message;
+  } finally {
+    btnAsk.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
