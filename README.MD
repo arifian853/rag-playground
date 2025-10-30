@@ -5,16 +5,22 @@ Pada tugas ini kamu akan bereksperimen dengan **5 parameter utama Retrieval-Augm
 Kamu akan:
 
 ✅ memahami efek tuning RAG
+
 ✅ mengamati perubahan kualitas vs kecepatan
+
 ✅ belajar trade-off retrieval & generation
+
 ✅ menulis insight praktis dari eksperimen
 
 > Tools sudah disediakan. Kamu **tidak perlu ngoding**, hanya ubah nilai parameter di file Python & restart server.
 
 **Notes:** 
 **- Ikuti video di LMS jika kamu kebingungan.**
+
 **- Sediakan penyimpanan at least 2GB, bakalan ada download model yang cukup besar ke laptopmu.**
+
 **- Hapus proyek ini kalau sudah selesai, biar laptop mu tidak tercekik**
+
 **- Ketika proyek ini sudah diisi, sudah dikerjakan dibawah, maka upload ke GitHub.**
 
 ---
@@ -35,9 +41,10 @@ Mengatur seberapa besar potongan teks untuk embedding.
 | **Lebih besar** (400–600) | ? (jawab) |
 | **Lebih kecil** (150–250) | ? (jawab) |
 
-**Pertanyaan refleksi**
+**Pertanyaan**
 
 * Chunk besar atau kecil lebih tepat untuk dokumen yang kamu tes?
+* Jawab : 
 
 ---
 
@@ -58,6 +65,7 @@ Berapa dokumen paling mirip yang diambil sebelum filtering.
 **Pertanyaan**
 
 * Apakah top-k kecil cukup untuk dataset kamu?
+* Jawab : 
 
 ---
 
@@ -78,6 +86,7 @@ Jumlah konteks yang akhirnya dimasukkan ke prompt LLM.
 **Pertanyaan**
 
 * Benarkah “semakin banyak konteks semakin bagus”?
+* Jawab : 
 
 ---
 
@@ -98,6 +107,7 @@ Menilai ulang (rerank) dokumen hasil embedding.
 **Pertanyaan**
 
 * Pada query jenis apa reranker paling terasa manfaatnya?
+* Jawab : 
 
 ---
 
@@ -118,6 +128,7 @@ Mengontrol variasi / kreativitas jawaban.
 **Pertanyaan**
 
 * Untuk QA berbasis dokumen perusahaan, temperatur ideal berapa?
+* Jawab : 
 
 ---
 
@@ -138,10 +149,7 @@ GROQ_MODEL = "llama-3.1-8b-instant"
 **Pertanyaan**
 
 * Apakah peningkatan kualitas sebanding dengan penambahan waktu?
-
----
-
-> Gunakan **pertanyaan nyata** dari konten PDF yang kamu upload.
+* Jawab : 
 
 ---
 
