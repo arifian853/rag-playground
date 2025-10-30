@@ -15,6 +15,7 @@ Kamu akan:
 > Tools sudah disediakan. Kamu **tidak perlu ngoding**, hanya ubah nilai parameter di file Python & restart server.
 
 **Notes:** 
+
 **- Ikuti video di LMS jika kamu kebingungan.**
 
 **- Sediakan penyimpanan at least 2GB, bakalan ada download model yang cukup besar ke laptopmu.**
